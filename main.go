@@ -1,15 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
+	"context"
+	"log"
+	"os/signal"
+	"syscall"
+	"todo/cmd"
 )
 
-func handler (w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Hello World")
-}
-
 func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	root := cmd.New()
+
+	_, err := root.ExecuteContextC(ctx)
+	if err != nil {
+		log.Panic(err)
+	}
 }
