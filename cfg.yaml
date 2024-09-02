@@ -3,7 +3,7 @@ db:
   user: todo
   host: 0.0.0.0
   password: todo
-  port: 5432
+  port: 5434
 
 server:
   host: 0.0.0.0

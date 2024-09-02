@@ -10,15 +10,22 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"todo/api"
 	"todo/configs"
+	"todo/core"
+	"todo/store"
 
 	"github.com/gin-gonic/gin"
 )
 
-func addTodoRoutes(group *gin.RouterGroup) {
+func addTodoRoutes(group *gin.RouterGroup, tdService api.TodoService) {
 
-	group.POST("/", func(ctx *gin.Context) {
-	})
+	handler := api.NewHandler(tdService)
+	group.POST("/", handler.Create)
+	group.GET("/", handler.List)
+	group.PUT("/:id", handler.Update)
+	group.DELETE("/:id", handler.Delete)
+	group.PUT("/restore/:id", handler.Restore)
 }
 
 func Serve(ctx context.Context, cfg configs.Config) {
@@ -28,9 +35,16 @@ func Serve(ctx context.Context, cfg configs.Config) {
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "Ok"})
 	})
-	todoGroup := router.Group("/todo")
-	addTodoRoutes(todoGroup)
 
+	pgstore, err := store.NewPostgresStore(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tdService := core.NewService(pgstore)
+
+	todoGroup := router.Group("/todo")
+	addTodoRoutes(todoGroup, tdService)
+	go pgstore.ScheduleCleanUp()
 	server := http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler:           router,
@@ -55,4 +69,5 @@ func Serve(ctx context.Context, cfg configs.Config) {
 		log.Fatalf("HTTP shutdown error: %v", err)
 	}
 	log.Println("Gracefull shutdown complete")
+
 }
