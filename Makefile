@@ -10,3 +10,5 @@ migrate_down: build
 start: build
 	build/todo server start -c ./cfg.yaml
     
+lint: 
+	golangci-lint run
